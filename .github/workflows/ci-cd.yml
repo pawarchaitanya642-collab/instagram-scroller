@@ -1,0 +1,167 @@
+name: Log Analyzer CI-CD
+# ==========================================
+# PIPELINE TRIGGERS
+# ==========================================
+
+on:
+  push:
+    branches: main
+
+
+# ==========================================
+# JOBS
+# ==========================================
+
+jobs:
+
+
+  # ========================================
+  # CI - AUTOMATED TESTING
+  # ========================================
+
+  test:
+
+    name: Automated Tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # --------------------------------------
+      # Checkout source code
+      # --------------------------------------
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+
+      # --------------------------------------
+      # Setup Python
+      # --------------------------------------
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+
+      # --------------------------------------
+      # Install dependencies
+      # --------------------------------------
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+
+      # --------------------------------------
+      # Run automated tests
+      # --------------------------------------
+
+      - name: Run Automated Tests
+        run: |
+          pytest -v
+
+
+
+  # ========================================
+  # CD - BUILD AND DEPLOY
+  # ========================================
+
+  deploy:
+
+    name: Build and Deploy
+
+    needs: test
+
+    # Self-hosted runner is used because
+    # Docker container must remain running
+    runs-on: self-hosted
+
+    steps:
+
+
+      # --------------------------------------
+      # Checkout source code
+      # --------------------------------------
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+
+      # --------------------------------------
+      # Build Docker Image
+      # --------------------------------------
+
+      - name: Build Docker Image
+        run: |
+          docker build -t log-analyzer:latest .
+
+
+      # --------------------------------------
+      # Terraform Init
+      # --------------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        
+      - name: Terraform Init
+        working-directory: terraform
+        run: |
+          terraform init
+
+
+      # --------------------------------------
+      # Terraform Validate
+      # --------------------------------------
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: |
+          terraform validate
+
+
+      # --------------------------------------
+      # Terraform Plan
+      # --------------------------------------
+
+      - name: Terraform Plan
+        working-directory: terraform
+        run: |
+          terraform plan
+
+
+      # --------------------------------------
+      # Terraform Apply
+      # --------------------------------------
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve
+
+
+      # --------------------------------------
+      # Verify Deployment
+      # --------------------------------------
+
+      - name: Verify Docker Container
+        run: |
+          docker ps
+
+          echo "Log Analyzer deployment completed successfully."
+
+      # --------------------------------------
+      # Verify Deployment & Check Output
+      # --------------------------------------
+
+      # Give the container 3 seconds to boot up and print its initial report
+      #- name: Wait for application startup
+      #  run: sleep 3
+
+      #- name: View Log Analyzer Output
+      #  run: |
+      #    echo "=== FETCHING CONTAINER OUTPUT ==="
+      #    docker logs log-analyzer
+      #    echo "================================="
+
