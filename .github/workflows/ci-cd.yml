@@ -156,12 +156,12 @@ jobs:
       # --------------------------------------
 
       # Give the container 3 seconds to boot up and print its initial report
-      #- name: Wait for application startup
-      #  run: sleep 3
+      - name: Wait for application startup
+        run: sleep 3
 
-      #- name: View Log Analyzer Output
-      #  run: |
-      #    echo "=== FETCHING CONTAINER OUTPUT ==="
-      #    docker logs log-analyzer
-      #    echo "================================="
+      - name: View Log Analyzer Output
+        run: |
+         echo "=== FETCHING CONTAINER OUTPUT ==="
+         docker logs log-analyzer
+         echo "================================="
 
